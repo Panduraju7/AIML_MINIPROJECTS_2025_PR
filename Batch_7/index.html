@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG Monitoring Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --bg-color: #f4f7fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            font-size: 1.5rem;
+            color: var(--danger);
+            margin-right: 0.5rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        nav ul li a:hover,
+        nav ul li a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        main {
+            padding: 2rem 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            height: 100%;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title i {
+            margin-right: 0.5rem;
+            color: var(--primary);
+        }
+
+        .card-body {
+            height: calc(100% - 3rem);
+        }
+
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            user-select: none;
+            border: 1px solid transparent;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            border-radius: 0.25rem;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+        }
+
+        .btn:focus {
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-secondary {
+            color: #fff;
+            background-color: var(--secondary);
+            border-color: var(--secondary);
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: var(--success);
+            border-color: var(--success);
+        }
+
+        .btn-danger {
+            color: #fff;
+            background-color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .btn-warning {
+            color: #212529;
+            background-color: var(--warning);
+            border-color: var(--warning);
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.765625rem;
+            line-height: 1.5;
+            border-radius: 0.2rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--dark);
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .alert {
+            position: relative;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.25rem;
+        }
+
+        .alert-danger {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .alert-success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .alert-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+
+        .alert-info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 1rem;
+            background-color: var(--light);
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .patient-info {
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        table th, table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        table th {
+            background-color: var(--light);
+            font-weight: 600;
+        }
+
+        table tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-normal {
+            background-color: var(--success);
+        }
+
+        .status-danger {
+            background-color: var(--danger);
+        }
+
+        .activity-log {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .log-entry {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .log-entry i {
+            margin-right: 0.5rem;
+        }
+
+        .log-entry .time {
+            margin-left: auto;
+            font-size: 0.8rem;
+            color: var(--secondary);
+        }
+
+        .log-entry.danger i {
+            color: var(--danger);
+        }
+
+        .log-entry.success i {
+            color: var(--success);
+        }
+
+        .log-entry.info i {
+            color: var(--info);
+        }
+
+        .settings-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .settings-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .modal-header, .modal-footer {
+            padding: 15px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            margin-top: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .pulse-animation {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--danger);
+            box-shadow: 0 0 0 rgba(220, 53, 69, 0.4);
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tab-container {
+            margin-bottom: 1rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .tab-button {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-weight: 500;
+            color: var(--secondary);
+            position: relative;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 576px) {
+            .card {
+                padding: 1rem;
+            }
+            
+            .card-title {
+                font-size: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <header>
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-heartbeat"></i>
+                <h1>ECG Monitoring Dashboard</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active" data-section="monitoring">Monitoring</a></li>
+                    <li><a href="#" data-section="reports">Reports</a></li>
+                    <li><a href="#" data-section="settings">Settings</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Monitoring Section -->
+            <section id="monitoringSection" class="section-content">
+                <div class="dashboard">
+                    <!-- ECG Chart Card -->
+                    <div class="card" style="grid-column: span 2;">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-chart-line"></i>
+                                ECG Live Monitoring
+                            </h2>
+                            <div class="btn-group">
+                                <button id="startMonitoringBtn" class="btn btn-success btn-sm">
+                                    <i class="fas fa-play"></i> Start
+                                </button>
+                                <button id="stopMonitoringBtn" class="btn btn-danger btn-sm" disabled>
+                                    <i class="fas fa-stop"></i> Stop
+                                </button>
+                                <button id="resetMonitoringBtn" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-sync"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="ecgChartCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient Info Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-user"></i>
+                                Patient Information
+                            </h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="patient-info">
+                                <div class="form-group">
+                                    <label for="patientName">Patient Name</label>
+                                    <input type="text" class="form-control" id="patientName" placeholder="Enter patient name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="patientId">Patient ID</label>
+                                    <input type="text" class="form-control" id="patientId" placeholder="Enter patient ID">
+                                </div>
+                                <div class="form-group">
+                                    <label for="patientNotes">Notes</label>
+                                    <textarea class="form-control" id="patientNotes" rows="3" placeholder="Add notes about the patient"></textarea>
+                                </div>
+                            </div>
+                            <button id="generateReportBtn" class="btn btn-primary" disabled>
+                                <i class="fas fa-file-medical-alt"></i> Generate Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Monitoring Stats Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">
+                                <i class="fas fa-heartbeat"></i>
+                                Monitoring Statistics
+                            </h2>
+                            <div id="currentStatus">
+                                <span class="status-indicator status-normal" id="statusIndicator"></span>
+                                <span id="statusText">Normal</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-container">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="heartRateValue">0</div>
+                                    <div class="stat-label">Heart Rate</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="monitoringTimeValue">0:00</div>
+                                    <div class="stat-label">Time</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="anomalyCountValue">0</div>
+                                    <div class="stat-label">Anomalies</div>
+                                </div>
+                            </div>
+                            <h3>Activity Log</h3>
+                            <div class="activity-log" id="activityLog">
+                                <!-- Log entries will be added here dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reportsSection" class="section-content hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-file-medical-alt"></i>
+                            Patient Reports
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-container">
+                            <div class="tab-buttons">
+                                <button class="tab-button active" data-tab="reportsList">Reports List</button>
+                                <button class="tab-button" data-tab="reportView">Report View</button>
+                            </div>
+                            <div class="tab-content active" id="reportsListTab">
+                                <table id="reportsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Patient Name</th>
+                                            <th>Patient ID</th>
+                                            <th>Anomalies</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reportsTableBody">
+                                        <!-- Report rows will be added here dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-content" id="reportViewTab">
+                                <div id="reportDetail">
+                                    <h3>Select a report to view details</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settingsSection" class="section-content hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-cog"></i>
+                            System Settings
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="settings-panel">
+                            <div class="form-group">
+                                <label for="samplingRate">Sampling Rate (Hz)</label>
+                                <input type="number" class="form-control" id="samplingRate" min="100" max="1000">
+                            </div>
+                            <div class="form-group">
+                                <label for="lowCutFreq">Low Cut Frequency (Hz)</label>
+                                <input type="number" class="form-control" id="lowCutFreq" min="0.01" max="10" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="highCutFreq">High Cut Frequency (Hz)</label>
+                                <input type="number" class="form-control" id="highCutFreq" min="10" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="anomalyThreshold">Anomaly Detection Threshold</label>
+                                <input type="number" class="form-control" id="anomalyThreshold" min="0.1" max="0.9" step="0.05">
+                            </div>
+                            <div class="form-group">
+                                <label for="simulationSpeed">Simulation Speed</label>
+                                <input type="number" class="form-control" id="simulationSpeed" min="0.1" max="5" step="0.1">
+                            </div>
+                        </div>
+                        <div class="btn-group" style="margin-top: 1rem;">
+                            <button id="saveSettingsBtn" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            <button id="resetSettingsBtn" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset to Defaults
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Report Generation Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Generate Patient Report</h2>
+                <span class="close" id="closeReportModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modalPatientName">Patient Name</label>
+                    <input type="text" class="form-control" id="modalPatientName">
+                </div>
+                <div class="form-group">
+                    <label for="modalPatientId">Patient ID</label>
+                    <input type="text" class="form-control" id="modalPatientId">
+                </div>
+                <div class="form-group">
+                    <label for="modalPatientNotes">Additional Notes</label>
+                    <textarea class="form-control" id="modalPatientNotes" rows="3"></textarea>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> This report will include all monitoring data from the current session.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveReportBtn" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Report
+                </button>
+                <button id="cancelReportBtn" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ---------------- Global Variables -----------------
+            const API_BASE_URL = ''; // Same origin
+            
+            // ECG Chart Initialization
+            const ecgChartContext = document.getElementById('ecgChartCanvas').getContext('2d');
+            const ecgChart = new Chart(ecgChartContext, {
+                type: 'line',
+                data: {
+                    labels: Array(300).fill(''),
+                    datasets: [{
+                        label: 'ECG Signal',
+                        data: Array(300).fill(0),
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 1.5,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            min: -1.2,
+                            max: 1.2,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // ---------------- Application State -----------------
+            const appState = {
+                monitoring: false,
+                simulationTimer: null,
+                currentSignal: [],
+                predictionHistory: [],
+                monitoringStartTime: null,
+                monitoringTime: 0,
+                anomalyCount: 0,
+                heartRate: 0,
+                anomalyThreshold: 0.7,
+                samplingRate: 300,
+                settings: {},
+                lastDataTimestamp: null
+            };
+
+            // ---------------- DOM Elements -----------------
+            const elements = {
+                startBtn: document.getElementById('startMonitoringBtn'),
+                stopBtn: document.getElementById('stopMonitoringBtn'),
+                resetBtn: document.getElementById('resetMonitoringBtn'),
+                generateReportBtn: document.getElementById('generateReportBtn'),
+                patientName: document.getElementById('patientName'),
+                patientId: document.getElementById('patientId'),
+                patientNotes: document.getElementById('patientNotes'),
+                heartRateValue: document.getElementById('heartRateValue'),
+                monitoringTimeValue: document.getElementById('monitoringTimeValue'),
+                anomalyCountValue: document.getElementById('anomalyCountValue'),
+                activityLog: document.getElementById('activityLog'),
+                statusIndicator: document.getElementById('statusIndicator'),
+                statusText: document.getElementById('statusText'),
+                navLinks: document.querySelectorAll('nav ul li a'),
+                sections: document.querySelectorAll('.section-content'),
+                reportsTableBody: document.getElementById('reportsTableBody'),
+                reportDetail: document.getElementById('reportDetail'),
+                tabButtons: document.querySelectorAll('.tab-button'),
+                tabContents: document.querySelectorAll('.tab-content'),
+                samplingRateInput: document.getElementById('samplingRate'),
+                lowCutFreqInput: document.getElementById('lowCutFreq'),
+                highCutFreqInput: document.getElementById('highCutFreq'),
+                anomalyThresholdInput: document.getElementById('anomalyThreshold'),
+                simulationSpeedInput: document.getElementById('simulationSpeed'),
+                saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+                resetSettingsBtn: document.getElementById('resetSettingsBtn'),
+                loadingOverlay: document.getElementById('loadingOverlay'),
+                reportModal: document.getElementById('reportModal'),
+                closeReportModal: document.getElementById('closeReportModal'),
+                modalPatientName: document.getElementById('modalPatientName'),
+                modalPatientId: document.getElementById('modalPatientId'),
+                modalPatientNotes: document.getElementById('modalPatientNotes'),
+                saveReportBtn: document.getElementById('saveReportBtn'),
+                cancelReportBtn: document.getElementById('cancelReportBtn')
+            };
+
+            // ---------------- Utility Functions -----------------
+            
+            // Format time as MM:SS
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            // Show loading overlay
+            function showLoading() {
+                elements.loadingOverlay.classList.remove('hidden');
+            }
+            
+            // Hide loading overlay
+            function hideLoading() {
+                elements.loadingOverlay.classList.add('hidden');
+            }
+            
+            // Add log entry to activity log
+            function addLogEntry(message, type = 'info') {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString();
+                
+                let icon = 'fa-info-circle';
+                if (type === 'danger') icon = 'fa-exclamation-triangle';
+                if (type === 'success') icon = 'fa-check-circle';
+                
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.innerHTML = `
+                    <i class="fas ${icon}"></i>
+                    <span>${message}</span>
+                    <span class="time">${timeStr}</span>
+                `;
+                
+                elements.activityLog.prepend(logEntry);
+                
+                // Limit to last 20 entries
+                if (elements.activityLog.children.length > 20) {
+                    elements.activityLog.removeChild(elements.activityLog.lastChild);
+                }
+            }
+            
+            // Update monitoring stats
+            function updateStats() {
+                if (!appState.monitoring) return;
+                
+                // Update monitoring time
+                const currentTime = Date.now();
+                const elapsedSeconds = (currentTime - appState.monitoringStartTime) / 1000;
+                appState.monitoringTime = elapsedSeconds;
+                
+                elements.monitoringTimeValue.textContent = formatTime(appState.monitoringTime);
+                elements.heartRateValue.textContent = appState.heartRate;
+                elements.anomalyCountValue.textContent = appState.anomalyCount;
+                
+                setTimeout(updateStats, 1000);
+            }
+            
+            // Set monitoring status
+            function setStatus(status) {
+                if (status === 'danger') {
+                    elements.statusIndicator.className = 'status-indicator status-danger';
+                    elements.statusText.textContent = 'Anomaly Detected';
+                    elements.statusIndicator.classList.add('pulse-animation');
+                } else {
+                    elements.statusIndicator.className = 'status-indicator status-normal';
+                    elements.statusText.textContent = 'Normal';
+                    elements.statusIndicator.classList.remove('pulse-animation');
+                }
+            }
+            
+            // Reset monitoring data
+            function resetMonitoring() {
+                appState.currentSignal = [];
+                appState.predictionHistory = [];
+                appState.anomalyCount = 0;
+                appState.heartRate = 0;
+                appState.monitoringTime = 0;
+                appState.lastDataTimestamp = null;
+                
+                // Reset chart
+                ecgChart.data.datasets[0].data = Array(300).fill(0);
+                ecgChart.update();
+                
+                // Reset UI
+                elements.monitoringTimeValue.textContent = '0:00';
+                elements.heartRateValue.textContent = '0';
+                elements.anomalyCountValue.textContent = '0';
+                elements.activityLog.innerHTML = '';
+                setStatus('normal');
+                
+                addLogEntry('Monitoring data reset', 'info');
+            }
+
+            // ---------------- API Functions -----------------
+            
+            // Get settings from server
+            async function fetchSettings() {
+                try {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/settings`);
+                    const data = await response.json();
+                    hideLoading();
+                    return data;
+                } catch (error) {
+                    console.error('Error fetching settings:', error);
+                    hideLoading();
+                    return null;
+                }
+            }
+            
+            // Save settings to server
+            async function saveSettings(settings) {
+                try {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/settings`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(settings)
+                    });
+                    const data = await response.json();
+                    hideLoading();
+                    return data;
+                } catch (error) {
+                    console.error('Error saving settings:', error);
+                    hideLoading();
+                    return null;
+                }
+            }
+            
+            // Fetch simulated ECG data
+            async function fetchSimulatedData(duration = 3, withAnomaly = false) {
+                try {
+                    const response = await fetch(
+                        `${API_BASE_URL}/simulate?duration=${duration}&anomaly=${withAnomaly}`
+                    );
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Error fetching simulated data:', error);
+                    return { signal: [] };
+                }
+            }
+            
+            // Send ECG data for prediction
+            async function predictEcgData(signal) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/predict`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ signal })
+                    });
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Error predicting ECG data:', error);
+                    return { prediction: 0, threshold: appState.anomalyThreshold, status: 'normal' };
+                }
+            }
+            
+            // Save patient report
+            async function savePatientReport(reportData) {
+                try {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/save_report`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(reportData)
+                    });
+                    const data = await response.json();
+                    hideLoading();
+                    return data;
+                } catch (error) {
+                    console.error('Error saving report:', error);
+                    hideLoading();
+                    return { success: false, error: error.message };
+                }
+            }
+            
+            // Fetch all reports
+            async function fetchReports() {
+                try {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/reports`);
+                    const data = await response.json();
+                    hideLoading();
+                    return data.reports;
+                } catch (error) {
+                    console.error('Error fetching reports:', error);
+                    hideLoading();
+                    return [];
+                }
+            }
+            
+            // Fetch specific report
+            async function fetchReport(reportId) {
+                try {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/reports/${reportId}`);
+                    const data = await response.json();
+                    hideLoading();
+                    return data;
+                } catch (error) {
+                    console.error('Error fetching report details:', error);
+                    hideLoading();
+                    return null;
+                }
+            }
+
+            // ---------------- Monitoring Functions -----------------
+            
+            // Start monitoring simulation
+            async function startMonitoring() {
+                if (appState.monitoring) return;
+                
+                appState.monitoring = true;
+                appState.monitoringStartTime = Date.now();
+                
+                elements.startBtn.disabled = true;
+                elements.stopBtn.disabled = false;
+                elements.generateReportBtn.disabled = true;
+                
+                addLogEntry('Monitoring started', 'success');
+                updateStats();
+                
+                // Use random anomaly probability
+                let anomalyProbability = 0.15;
+                
+                // Start simulation loop
+                simulateEcgDataFetch();
+                
+                // Function to simulate fetching ECG data
+                async function simulateEcgDataFetch() {
+                    if (!appState.monitoring) return;
+                    
+                    // Determine if this chunk should contain an anomaly
+                    const includeAnomaly = Math.random() < anomalyProbability;
+                    
+                    // Fetch simulated data
+                    const data = await fetchSimulatedData(2, includeAnomaly);
+                    
+                    if (!appState.monitoring) return;
+                    
+                    // Process the new data chunk
+                    if (data.signal && data.signal.length > 0) {
+                        processEcgData(data.signal);
+                    }
+                    
+                    // Schedule next data fetch if still monitoring
+                    if (appState.monitoring) {
+                        const simulationDelay = 1000 / appState.settings.simulation_speed;
+                        appState.simulationTimer = setTimeout(simulateEcgDataFetch, simulationDelay);
+                    }
+                }
+            }
+            
+            // Stop monitoring
+            function stopMonitoring() {
+                if (!appState.monitoring) return;
+                
+                appState.monitoring = false;
+                clearTimeout(appState.simulationTimer);
+                
+                elements.startBtn.disabled = false;
+                elements.stopBtn.disabled = true;
+                elements.generateReportBtn.disabled = false;
+                
+                addLogEntry('Monitoring stopped', 'info');
+            }
+            
+            // Process ECG data chunk
+            async function processEcgData(signalChunk) {
+                // Add chunk to current signal
+                appState.currentSignal = [...appState.currentSignal, ...signalChunk];
+                
+                // Keep last 1000 data points
+                if (appState.currentSignal.length > 1000) {
+                    appState.currentSignal = appState.currentSignal.slice(-1000);
+                }
+                
+                // Update chart with latest 300 points
+                const displaySignal = appState.currentSignal.slice(-300);
+                ecgChart.data.datasets[0].data = displaySignal;
+                ecgChart.update();
+                
+                // Get prediction for this data
+                const prediction = await predictEcgData(appState.currentSignal);
+                
+                // Calculate heart rate (simulated)
+                appState.heartRate = Math.floor(Math.random() * 20) + 60;
+                
+                // Record prediction result
+                appState.predictionHistory.push({
+                    timestamp: Date.now(),
+                    prediction: prediction.prediction,
+                    status: prediction.status
+                });
+                
+                // Check for anomaly
+                if (prediction.status === 'danger') {
+                    appState.anomalyCount++;
+                    setStatus('danger');
+                    addLogEntry(`Anomaly detected (score: ${prediction.prediction.toFixed(2)})`, 'danger');
+                } else {
+                    setStatus('normal');
+                }
+            }
+
+            // ---------------- UI Interaction Functions -----------------
+            
+            // Show section by ID
+            function showSection(sectionId) {
+                elements.sections.forEach(section => {
+                    section.classList.add('hidden');
+                });
+                
+                document.getElementById(`${sectionId}Section`).classList.remove('hidden');
+                
+                elements.navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('data-section') === sectionId) {
+                        link.classList.add('active');
+                    }
+                });
+                
+                // Special handling for sections
+                if (sectionId === 'reports') {
+                    loadReportsList();
+                } else if (sectionId === 'settings') {
+                    loadSettings();
+                }
+            }
+            
+            // Load reports list
+            async function loadReportsList() {
+                const reports = await fetchReports();
+                elements.reportsTableBody.innerHTML = '';
+                
+                if (reports.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td colspan="5" style="text-align: center;">No reports available</td>`;
+                    elements.reportsTableBody.appendChild(row);
+                } else {
+                    reports.forEach(report => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${report.date}</td>
+                            <td>${report.patient_name}</td>
+                            <td>${report.patient_id}</td>
+                            <td>${report.anomalies_detected}</td>
+                            <td>
+                                <button class="btn btn-primary btn-sm view-report" data-id="${report.report_id}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        `;
+                        elements.reportsTableBody.appendChild(row);
+                    });
+                    
+                    // Add event listeners to view buttons
+                    document.querySelectorAll('.view-report').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const reportId = e.currentTarget.getAttribute('data-id');
+                            viewReport(reportId);
+                        });
+                    });
+                }
+            }
+            
+            // View specific report
+            async function viewReport(reportId) {
+                const report = await fetchReport(reportId);
+                if (!report) {
+                    elements.reportDetail.innerHTML = '<div class="alert alert-danger">Error loading report</div>';
+                    return;
+                }
+                
+                // Show the report view tab
+                document.querySelector('[data-tab="reportView"]').click();
+                
+                // Prepare HTML for report details
+                let html = `
+                    <h3>Report Details</h3>
+                    <div class="patient-info">
+                        <p><strong>Patient Name:</strong> ${report.patient_name}</p>
+                        <p><strong>Patient ID:</strong> ${report.patient_id}</p>
+                        <p><strong>Report Date:</strong> ${report.date}</p>
+                        <p><strong>Monitoring Duration:</strong> ${formatTime(report.monitoring_duration)}</p>
+                        <p><strong>Anomalies Detected:</strong> ${report.anomalies_detected}</p>
+                        <p><strong>Average Heart Rate:</strong> ${report.avg_heart_rate} BPM</p>
+                    </div>
+                `;
+                
+                if (report.notes) {
+                    html += `
+                        <h4>Notes</h4>
+                        <div class="notes">
+                            ${report.notes}
+                        </div>
+                    `;
+                }
+                
+                // Add a chart if we have time-series data
+                if (report.data && report.data.timestamps && report.data.predictions) {
+                    html += `
+                        <h4>Monitoring Results</h4>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+                    `;
+                }
+                
+                elements.reportDetail.innerHTML = html;
+                
+                // Initialize chart if we have data
+                if (report.data && report.data.timestamps && report.data.predictions) {
+                    const ctx = document.getElementById('reportChart').getContext('2d');
+                    // Continuing from the truncated file - ECG Report Chart initialization
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: report.data.timestamps,
+                            datasets: [{
+                                label: 'Anomaly Score',
+                                data: report.data.predictions,
+                                borderColor: 'rgba(220, 53, 69, 1)',
+                                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                                borderWidth: I,
+                                pointRadius: 2,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 1
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+            
+            // Load settings
+            async function loadSettings() {
+                const settings = await fetchSettings();
+                if (settings) {
+                    // Update local state
+                    appState.settings = settings;
+                    
+                    // Update form fields
+                    elements.samplingRateInput.value = settings.sampling_rate;
+                    elements.lowCutFreqInput.value = settings.low_cut_freq;
+                    elements.highCutFreqInput.value = settings.high_cut_freq;
+                    elements.anomalyThresholdInput.value = settings.anomaly_threshold;
+                    elements.simulationSpeedInput.value = settings.simulation_speed;
+                } else {
+                    // Use defaults if settings couldn't be loaded
+                    const defaultSettings = {
+                        sampling_rate: 250,
+                        low_cut_freq: 0.5,
+                        high_cut_freq: 40,
+                        anomaly_threshold: 0.7,
+                        simulation_speed: 1.0
+                    };
+                    
+                    appState.settings = defaultSettings;
+                    
+                    // Update form fields
+                    elements.samplingRateInput.value = defaultSettings.sampling_rate;
+                    elements.lowCutFreqInput.value = defaultSettings.low_cut_freq;
+                    elements.highCutFreqInput.value = defaultSettings.high_cut_freq;
+                    elements.anomalyThresholdInput.value = defaultSettings.anomaly_threshold;
+                    elements.simulationSpeedInput.value = defaultSettings.simulation_speed;
+                    
+                    addLogEntry('Using default settings', 'info');
+                }
+            }
+            
+            // Save settings from form
+            async function saveSettingsFromForm() {
+                const settings = {
+                    sampling_rate: parseInt(elements.samplingRateInput.value),
+                    low_cut_freq: parseFloat(elements.lowCutFreqInput.value),
+                    high_cut_freq: parseFloat(elements.highCutFreqInput.value),
+                    anomaly_threshold: parseFloat(elements.anomalyThresholdInput.value),
+                    simulation_speed: parseFloat(elements.simulationSpeedInput.value)
+                };
+                
+                const result = await saveSettings(settings);
+                if (result && result.success) {
+                    appState.settings = settings;
+                    appState.anomalyThreshold = settings.anomaly_threshold;
+                    addLogEntry('Settings saved successfully', 'success');
+                } else {
+                    addLogEntry('Failed to save settings', 'danger');
+                }
+            }
+            
+            // Reset settings to defaults
+            function resetSettingsToDefaults() {
+                const defaultSettings = {
+                    sampling_rate: 250,
+                    low_cut_freq: 0.5,
+                    high_cut_freq: 40,
+                    anomaly_threshold: 0.7,
+                    simulation_speed: 1.0
+                };
+                
+                // Update form fields
+                elements.samplingRateInput.value = defaultSettings.sampling_rate;
+                elements.lowCutFreqInput.value = defaultSettings.low_cut_freq;
+                elements.highCutFreqInput.value = defaultSettings.high_cut_freq;
+                elements.anomalyThresholdInput.value = defaultSettings.anomaly_threshold;
+                elements.simulationSpeedInput.value = defaultSettings.simulation_speed;
+                
+                addLogEntry('Settings reset to defaults', 'info');
+            }
+            
+            // Show report generation modal
+            function showReportModal() {
+                // Pre-fill modal with current patient info
+                elements.modalPatientName.value = elements.patientName.value;
+                elements.modalPatientId.value = elements.patientId.value;
+                elements.modalPatientNotes.value = elements.patientNotes.value;
+                
+                elements.reportModal.style.display = 'block';
+            }
+            
+            // Hide report generation modal
+            function hideReportModal() {
+                elements.reportModal.style.display = 'none';
+            }
+            
+            // Handle report generation
+            async function handleGenerateReport() {
+                const reportData = {
+                    patient_name: elements.modalPatientName.value,
+                    patient_id: elements.modalPatientId.value,
+                    notes: elements.modalPatientNotes.value,
+                    date: new Date().toISOString(),
+                    monitoring_duration: appState.monitoringTime,
+                    anomalies_detected: appState.anomalyCount,
+                    avg_heart_rate: appState.heartRate,
+                    data: {
+                        timestamps: appState.predictionHistory.map(p => 
+                            new Date(p.timestamp).toLocaleTimeString()),
+                        predictions: appState.predictionHistory.map(p => p.prediction)
+                    }
+                };
+                
+                const result = await savePatientReport(reportData);
+                if (result && result.success) {
+                    hideReportModal();
+                    addLogEntry('Report generated successfully', 'success');
+                    // Show reports section
+                    showSection('reports');
+                } else {
+                    addLogEntry('Failed to generate report', 'danger');
+                }
+            }
+            
+            // Tab switching
+            function switchTab(tabId) {
+                elements.tabContents.forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                elements.tabButtons.forEach(button => {
+                    button.classList.remove('active');
+                });
+                
+                document.getElementById(`${tabId}Tab`).classList.add('active');
+                document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            }
+
+            // ---------------- Simulated API Implementation -----------------
+            // These functions would normally be backend calls
+            // Using mock implementation for demonstration
+            
+            // Mock version of API endpoints when no backend is available
+            if (!API_BASE_URL) {
+                // Override API functions with mock implementations
+                
+                // Mock settings
+                window.mockData = {
+                    settings: {
+                        sampling_rate: 250,
+                        low_cut_freq: 0.5,
+                        high_cut_freq: 40,
+                        anomaly_threshold: 0.7,
+                        simulation_speed: 1.0
+                    },
+                    reports: []
+                };
+                
+                fetchSettings = async function() {
+                    return Promise.resolve(window.mockData.settings);
+                };
+                
+                saveSettings = async function(settings) {
+                    window.mockData.settings = settings;
+                    return Promise.resolve({ success: true });
+                };
+                
+                // Generate realistic ECG waveform
+                fetchSimulatedData = async function(duration = 3, withAnomaly = false) {
+                    const dataPoints = duration * 250; // Points based on duration and sample rate
+                    const signal = [];
+                    
+                    // Generate normal ECG-like pattern
+                    for (let i = 0; i < dataPoints; i++) {
+                        const t = i / 250; // Time in seconds
+                        const phase = (t * 2) % 1; // Repeat every 2 seconds
+                        
+                        // Normal ECG pattern
+                        let value = 0;
+                        
+                        // P wave
+                        if (phase < 0.08) {
+                            value = 0.25 * Math.sin(Math.PI * phase / 0.08);
+                        }
+                        // QRS complex
+                        else if (phase < 0.15) {
+                            const qrsPhase = (phase - 0.08) / 0.07;
+                            if (qrsPhase < 0.2) {
+                                value = -0.3 * qrsPhase / 0.2;
+                            } else if (qrsPhase < 0.4) {
+                                value = -0.3 + 1.5 * (qrsPhase - 0.2) / 0.2;
+                            } else {
+                                value = 1.2 - 1.5 * (qrsPhase - 0.4) / 0.6;
+                            }
+                        }
+                        // T wave
+                        else if (phase < 0.3) {
+                            value = 0.35 * Math.sin(Math.PI * (phase - 0.15) / 0.15);
+                        }
+                        
+                        // Add noise
+                        value += (Math.random() - 0.5) * 0.05;
+                        
+                        // Add anomaly if requested
+                        if (withAnomaly && phase > 0.4 && phase < 0.6) {
+                            // Simulate arrhythmia
+                            if (phase < 0.45) {
+                                value += 0.4 * Math.sin(2 * Math.PI * 10 * (phase - 0.4));
+                            } else if (phase < 0.5) {
+                                value += -0.3;
+                            } else {
+                                value += 0.2 * Math.sin(2 * Math.PI * 3 * (phase - 0.5));
+                            }
+                        }
+                        
+                        signal.push(value);
+                    }
+                    
+                    return Promise.resolve({ signal });
+                };
+                
+                predictEcgData = async function(signal) {
+                    // Simplified anomaly detection
+                    // In a real system, this would use a proper ML model
+                    
+                    // Take last 250 points (1 second)
+                    const lastSecond = signal.slice(-250);
+                    
+                    // Check for high variation in the signal
+                    let variation = 0;
+                    for (let i = 1; i < lastSecond.length; i++) {
+                        variation += Math.abs(lastSecond[i] - lastSecond[i-1]);
+                    }
+                    
+                    // Normalize variation
+                    variation = variation / lastSecond.length;
+                    
+                    // Calculate anomaly score (0-1)
+                    const anomalyScore = Math.min(1, variation * 10);
+                    
+                    // Determine status based on threshold
+                    const threshold = window.mockData.settings.anomaly_threshold;
+                    const status = anomalyScore > threshold ? 'danger' : 'normal';
+                    
+                    return Promise.resolve({
+                        prediction: anomalyScore,
+                        threshold,
+                        status
+                    });
+                };
+                
+                savePatientReport = async function(reportData) {
+                    // Generate random ID
+                    const reportId = 'r' + Math.floor(Math.random() * 1000000);
+                    
+                    // Add to mock reports
+                    window.mockData.reports.push({
+                        ...reportData,
+                        report_id: reportId
+                    });
+                    
+                    return Promise.resolve({ success: true, report_id: reportId });
+                };
+                
+                fetchReports = async function() {
+                    // Format dates nicely for display
+                    const reports = window.mockData.reports.map(report => ({
+                        ...report,
+                        date: new Date(report.date).toLocaleString()
+                    }));
+                    
+                    return Promise.resolve(reports);
+                };
+                
+                fetchReport = async function(reportId) {
+                    const report = window.mockData.reports.find(r => r.report_id === reportId);
+                    
+                    if (report) {
+                        // Format date for display
+                        return Promise.resolve({
+                            ...report,
+                            date: new Date(report.date).toLocaleString()
+                        });
+                    }
+                    
+                    return Promise.resolve(null);
+                };
+            }
+
+            // ---------------- Event Listeners -----------------
+            // Navigation links
+            elements.navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const section = e.currentTarget.getAttribute('data-section');
+                    showSection(section);
+                });
+            });
+            
+            // Tab buttons
+            elements.tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const tabId = e.currentTarget.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Start monitoring button
+            elements.startBtn.addEventListener('click', startMonitoring);
+            
+            // Stop monitoring button
+            elements.stopBtn.addEventListener('click', stopMonitoring);
+            
+            // Reset monitoring button
+            elements.resetBtn.addEventListener('click', resetMonitoring);
+            
+            // Generate report button
+            elements.generateReportBtn.addEventListener('click', showReportModal);
+            
+            // Close report modal
+            elements.closeReportModal.addEventListener('click', hideReportModal);
+            elements.cancelReportBtn.addEventListener('click', hideReportModal);
+            
+            // Save report button
+            elements.saveReportBtn.addEventListener('click', handleGenerateReport);
+            
+            // Save settings button
+            elements.saveSettingsBtn.addEventListener('click', saveSettingsFromForm);
+            
+            // Reset settings button
+            elements.resetSettingsBtn.addEventListener('click', resetSettingsToDefaults);
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === elements.reportModal) {
+                    hideReportModal();
+                }
+            });
+            
+            // ---------------- Initialization -----------------
+            // Initialize application
+            async function initApp() {
+                showLoading();
+                
+                // Load settings
+                await loadSettings();
+                
+                // Init default section
+                showSection('monitoring');
+                
+                hideLoading();
+                addLogEntry('System initialized and ready', 'success');
+            }
+            
+            // Start the application
+            initApp();
+        });
+    </script>
+</body>
+</html>
